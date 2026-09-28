@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#123C3F">
+<title>سجل الطبعات</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1F0; --surface:#FFFFFF; --ink:#15262A; --muted:#5F7176; --line:#D5DEDD;
+  --teal:#123C3F; --teal-2:#1F6F6B; --amber:#E9A21B; --amber-ink:#5A3A00; --danger:#B3261E;
+  --field:#F5F8F7;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1A1C; --surface:#172527; --ink:#E4ECEB; --muted:#95A7A9; --line:#2A3B3E;
+    --teal:#9ED7CF; --teal-2:#63B7AD; --amber:#F2B53A; --amber-ink:#2A1B00; --danger:#F2A19B;
+    --field:#1D2E31;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1A1C; --surface:#172527; --ink:#E4ECEB; --muted:#95A7A9; --line:#2A3B3E;
+  --teal:#9ED7CF; --teal-2:#63B7AD; --amber:#F2B53A; --amber-ink:#2A1B00; --danger:#F2A19B;
+  --field:#1D2E31;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font-family:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.5;
+  -webkit-tap-highlight-color:transparent}
+.num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px 110px}
+header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+header.top h1{font-size:22px;font-weight:700;margin:0;color:var(--teal)}
+
+/* day navigator: the signature element — a spool strip */
+.daynav{background:var(--teal);color:#fff;border-radius:20px;padding:16px 16px 18px;position:relative;overflow:hidden}
+:root[data-theme="dark"] .daynav{color:#0F1A1C}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .daynav{color:#0F1A1C}}
+.daynav .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.daynav .arrow{background:rgba(255,255,255,.14);border:0;width:42px;height:42px;border-radius:50%;font-size:22px;color:inherit}
+.daynav .date{text-align:center;flex:1}
+.daynav .date b{display:block;font-size:18px}
+.daynav .date input{background:transparent;border:0;color:inherit;opacity:.8;font-size:14px;text-align:center}
+.daynav .date input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.7}
+.grams{margin-top:14px;display:flex;align-items:baseline;gap:8px}
+.grams .big{font-size:44px;font-weight:700;line-height:1}
+.grams .unit{font-size:16px;opacity:.8}
+.strand{height:8px;border-radius:8px;background:rgba(255,255,255,.18);margin-top:10px;overflow:hidden}
+.strand i{display:block;height:100%;background:var(--amber);border-radius:8px;transition:width .5s ease}
+.stats{display:flex;gap:18px;margin-top:12px;font-size:14px;opacity:.9;flex-wrap:wrap}
+.stats span b{font-weight:600}
+
+.list{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+.item{display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:right;width:100%}
+.item img,.item .ph{width:72px;height:72px;border-radius:10px;object-fit:cover;flex:none;background:var(--field)}
+.item .ph{display:grid;place-items:center;color:var(--muted);font-size:26px}
+.item .body{flex:1;min-width:0}
+.item .desc{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .cust{color:var(--muted);font-size:14px}
+.item .meta{display:flex;gap:10px;margin-top:4px;font-size:14px;flex-wrap:wrap}
+.chip{background:var(--field);border-radius:8px;padding:1px 8px}
+.chip.w{background:var(--amber);color:var(--amber-ink);font-weight:600}
+.empty{text-align:center;color:var(--muted);padding:34px 12px}
+.empty button{margin-top:10px}
+
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:600;background:var(--teal-2);color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+.btn.block{width:100%}
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));
+  background:var(--amber);color:var(--amber-ink);border:0;border-radius:28px;padding:14px 26px;font-weight:700;
+  box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:5}
+
+nav.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--line);
+  display:flex;padding-bottom:env(safe-area-inset-bottom,0px);z-index:6}
+nav.tabs button{flex:1;background:none;border:0;padding:12px 4px 14px;color:var(--muted);font-size:14px;font-weight:600}
+nav.tabs button[aria-selected="true"]{color:var(--teal);box-shadow:inset 0 3px 0 var(--teal)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px}
+.panel h2{font-size:17px;margin:0 0 12px}
+label.f{display:block;margin-bottom:12px;font-size:14px;color:var(--muted)}
+label.f input,label.f textarea{display:block;width:100%;margin-top:4px;background:var(--field);border:1px solid var(--line);
+  border-radius:10px;padding:11px 12px;font-size:16px;color:var(--ink)}
+label.f textarea{min-height:70px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.result{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:15px}
+.result .k{color:var(--muted)}
+.result .total{font-weight:700;font-size:18px;border-top:1px solid var(--line);padding-top:8px}
+.result .price{font-weight:700;font-size:24px;color:var(--teal-2)}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+
+.days{display:flex;flex-direction:column;gap:8px}
+.dayrow{display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;padding:12px 14px;width:100%;text-align:right}
+.dayrow small{color:var(--muted);display:block}
+
+/* sheet */
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.sheet.open{display:flex}
+.sheet .card{background:var(--surface);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 16px;
+  padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto;animation:up .22s ease}
+@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet .card{animation:none}.strand i{transition:none}}
+.photo-pick{display:block;border:1.5px dashed var(--line);border-radius:14px;height:180px;margin-bottom:12px;
+  position:relative;overflow:hidden;background:var(--field);text-align:center}
+.photo-pick span{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted)}
+.photo-pick img{width:100%;height:100%;object-fit:cover;position:relative}
+.photo-pick input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.suggest{font-size:13px;color:var(--teal-2);margin-top:-6px;margin-bottom:12px}
+.actions{display:flex;gap:10px;margin-top:6px}
+.actions .btn{flex:1}
+.toast{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  padding:10px 16px;border-radius:10px;font-size:14px;z-index:30;display:none}
+.banner{background:var(--danger);color:#fff;padding:10px 14px;border-radius:10px;margin-bottom:12px;display:none}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<div class="wrap">
+  <div class="banner" id="banner"></div>
+  <header class="top"><h1>سجل الطبعات</h1></header>
+
+  <!-- ORDERS -->
+  <section id="v-orders">
+    <div class="daynav">
+      <div class="row">
+        <button class="arrow" id="prevDay" aria-label="اليوم السابق">›</button>
+        <div class="date">
+          <b id="dayLabel">اليوم</b>
+          <input type="date" id="datePick" aria-label="اختر اليوم">
+        </div>
+        <button class="arrow" id="nextDay" aria-label="اليوم التالي">‹</button>
+      </div>
+      <div class="grams"><span class="big num" id="dGrams">0</span><span class="unit">غرام اليوم</span></div>
+      <div class="strand" aria-hidden="true"><i id="dStrand" style="width:0"></i></div>
+      <div class="stats">
+        <span><b class="num" id="dCount">0</b> طبعات</span>
+        <span>التكلفة <b class="num" id="dCost">$0.00</b></span>
+        <span>المقبوض <b class="num" id="dRev">$0.00</b></span>
+      </div>
+    </div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <!-- DAYS -->
+  <section id="v-days" hidden>
+    <div class="panel" style="margin-top:0">
+      <h2>كل الأيام</h2>
+      <div class="result" id="allTotals"></div>
+    </div>
+    <div class="days" id="days" style="margin-top:14px"></div>
+  </section>
+
+  <!-- CALC -->
+  <section id="v-calc" hidden>
+    <div class="panel" style="margin-top:0">
+      <h2>حاسبة التكلفة</h2>
+      <div class="two">
+        <label class="f">الوزن (غرام)<input type="number" inputmode="decimal" id="cGrams" min="0" step="any" placeholder="مثلاً 45"></label>
+        <label class="f">مدة الطباعة (ساعة)<input type="number" inputmode="decimal" id="cHours" min="0" step="any" placeholder="مثلاً 3.5"></label>
+      </div>
+      <div class="result" id="calcOut"></div>
+      <p class="hint">الأسعار والهوامش تُعدَّل من تبويب الإعدادات.</p>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="v-settings" hidden>
+    <div class="panel" style="margin-top:0">
+      <h2>إعدادات الحساب</h2>
+      <div class="two">
+        <label class="f">سعر البكرة ($)<input type="number" inputmode="decimal" id="sSpool" step="any"></label>
+        <label class="f">وزن البكرة (غرام)<input type="number" inputmode="decimal" id="sSpoolG" step="any"></label>
+        <label class="f">استهلاك الطابعة (واط)<input type="number" inputmode="decimal" id="sWatt" step="any"></label>
+        <label class="f">سعر الكيلوواط ($)<input type="number" inputmode="decimal" id="sKwh" step="any"></label>
+        <label class="f">هامش الهدر والفشل (%)<input type="number" inputmode="decimal" id="sWaste" step="any"></label>
+        <label class="f">هامش الربح (%)<input type="number" inputmode="decimal" id="sProfit" step="any"></label>
+      </div>
+      <label class="f">رسوم ثابتة لكل طبعة ($)<input type="number" inputmode="decimal" id="sFixed" step="any"></label>
+      <p class="hint">تُحفظ تلقائياً على هذا الجهاز.</p>
+    </div>
+    <div class="panel">
+      <h2>النسخ الاحتياطي</h2>
+      <p class="hint" style="margin:0 0 12px">البيانات محفوظة داخل المتصفح على هاتفك فقط. مسح بيانات المتصفح يمسحها، لذلك صدّر نسخة كل فترة.</p>
+      <div class="actions">
+        <button class="btn" id="exportBtn">تصدير نسخة</button>
+        <label class="btn ghost" style="text-align:center">استيراد نسخة<input type="file" id="importFile" accept=".json,application/json" hidden></label>
+      </div>
+            <button class="btn ghost block" id="csvBtn" style="margin-top:10px">تصدير جدول CSV للإكسل</button>
+    </div>
+  </section>
+</div>
+
+<button class="fab" id="addBtn">+ طبعة جديدة</button>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-v="orders" aria-selected="true">الطلبات</button>
+  <button role="tab" data-v="days" aria-selected="false">الأيام</button>
+  <button role="tab" data-v="calc" aria-selected="false">الحاسبة</button>
+  <button role="tab" data-v="settings" aria-selected="false">الإعدادات</button>
+</nav>
+
+<!-- ADD/EDIT SHEET -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="card">
+    <h2 id="sheetTitle" style="margin:0 0 12px;font-size:18px">طبعة جديدة</h2>
+    <label class="photo-pick" id="photoBox">
+      <span id="photoHint">📷 اضغط لإضافة صورة الطبعة</span>
+      <img id="photoPrev" alt="" hidden>
+      <input type="file" accept="image/*" id="photoIn">
+    </label>
+    <label class="f">الوصف<textarea id="fDesc" placeholder="مثلاً: حامل هاتف أسود PLA"></textarea></label>
+    <label class="f">اسم الزبون (اختياري)<input id="fCust"></label>
+    <div class="two">
+      <label class="f">الوزن (غرام)<input type="number" inputmode="decimal" id="fGrams" step="any"></label>
+      <label class="f">المدة (ساعة)<input type="number" inputmode="decimal" id="fHours" step="any"></label>
+    </div>
+    <label class="f">السعر المقبوض ($)<input type="number" inputmode="decimal" id="fPrice" step="any"></label>
+    <div class="suggest" id="fSuggest"></div>
+    <label class="f">التاريخ<input type="date" id="fDate"></label>
+    <div class="actions">
+      <button class="btn" id="saveBtn">حفظ الطبعة</button>
+      <button class="btn ghost" id="cancelBtn">إلغاء</button>
+    </div>
+    <button class="btn danger block" id="delBtn" style="margin-top:10px" hidden>حذف الطبعة</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------- storage ----------
+  const DEF = {spool:20, spoolG:1000, watt:120, kwh:0.35, waste:10, profit:100, fixed:0};
+  let S = {...DEF};
+  try { const s = JSON.parse(localStorage.getItem('pl_settings')||'null'); if (s) S = {...DEF, ...s}; } catch(e){}
+  const saveS = () => { try { localStorage.setItem('pl_settings', JSON.stringify(S)); } catch(e){} };
+
+  let db = null, prints = [];
+  const openDB = () => new Promise((res, rej) => {
+    try {
+      const r = indexedDB.open('printlog', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('prints', {keyPath:'id'});
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    } catch(e){ rej(e); }
+  });
+  const tx = (mode, fn) => new Promise((res, rej) => {
+    const t = db.transaction('prints', mode); const st = t.objectStore('prints');
+    const out = fn(st); t.oncomplete = () => res(out && out.result); t.onerror = () => rej(t.error);
+  });
+  const loadAll = async () => { prints = (await tx('readonly', st => st.getAll())) || []; };
+  const putPrint = p => tx('readwrite', st => st.put(p));
+  const delPrint = id => tx('readwrite', st => st.delete(id));
+
+  // ---------- helpers ----------
+  const $ = id => document.getElementById(id);
+  const money = n => '$' + (Number(n)||0).toFixed(2);
+  const fmtG = n => (Math.round((Number(n)||0)*10)/10).toLocaleString('en');
+  const iso = d => { const z = new Date(d.getTime() - d.getTimezoneOffset()*60000); return z.toISOString().slice(0,10); };
+  const today = () => iso(new Date());
+  const addDays = (s, n) => { const d = new Date(s+'T12:00:00'); d.setDate(d.getDate()+n); return iso(d); };
+  const dayName = s => {
+    if (s === today()) return 'اليوم';
+    if (s === addDays(today(), -1)) return 'أمس';
+    return new Date(s+'T12:00:00').toLocaleDateString('ar', {weekday:'long', day:'numeric', month:'long'});
+  };
+  const toast = m => { const t = $('toast'); t.textContent = m; t.style.display='block'; clearTimeout(toast._t); toast._t = setTimeout(()=>t.style.display='none', 1800); };
+  const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function calc(g, h){
+    g = Number(g)||0; h = Number(h)||0;
+    const material = g * (S.spool / (S.spoolG||1000));
+    const power = (S.watt/1000) * h * S.kwh;
+    const waste = (material + power) * (S.waste/100);
+    const cost = material + power + waste + (Number(S.fixed)||0);
+    const price = cost * (1 + S.profit/100);
+    return {material, power, waste, cost, price};
+  }
+
+  // ---------- views ----------
+  let view = 'orders', cur = today();
+  document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => show(b.dataset.v));
+  function show(v){
+    view = v;
+    ['orders','days','calc','settings'].forEach(k => $('v-'+k).hidden = k!==v);
+    document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.v===v));
+    $('addBtn').hidden = !(v==='orders' || v==='days');
+    render();
+  }
+
+  function render(){
+    if (view==='orders') renderDay();
+    if (view==='days') renderDays();
+    if (view==='calc') renderCalc();
+    if (view==='settings') fillSettings();
+  }
+
+  function renderDay(){
+    $('dayLabel').textContent = dayName(cur);
+    $('datePick').value = cur;
+    const items = prints.filter(p => p.date===cur).sort((a,b)=>b.createdAt-a.createdAt);
+    const g = items.reduce((s,p)=>s+(+p.grams||0),0);
+    const cost = items.reduce((s,p)=>s+calc(p.grams,p.hours).cost,0);
+    const rev = items.reduce((s,p)=>s+(+p.price||0),0);
+    $('dGrams').textContent = fmtG(g);
+    $('dCount').textContent = items.length;
+    $('dCost').textContent = money(cost);
+    $('dRev').textContent = money(rev);
+    $('dStrand').style.width = Math.min(100, g / (S.spoolG||1000) * 100) + '%';
+    const L = $('list');
+    if (!items.length){
+      L.innerHTML = `<div class="empty">لا طبعات مسجلة في هذا اليوم.<br><button class="btn" id="emptyAdd">سجّل أول طبعة</button></div>`;
+      $('emptyAdd').onclick = () => openSheet();
+      return;
+    }
+    L.innerHTML = items.map(p => `
+      <button class="item" data-id="${p.id}">
+        ${p.photo ? `<img src="${p.photo}" alt="">` : `<div class="ph">▦</div>`}
+        <div class="body">
+          <div class="desc">${esc(p.desc)||'بدون وصف'}</div>
+          ${p.customer?`<div class="cust">${esc(p.customer)}</div>`:''}
+          <div class="meta">
+            <span class="chip w num">${fmtG(p.grams)} g</span>
+            <span class="chip">تكلفة <span class="num">${money(calc(p.grams,p.hours).cost)}</span></span>
+            ${p.price!==''&&p.price!=null?`<span class="chip">مقبوض <span class="num">${money(p.price)}</span></span>`:''}
+          </div>
+        </div>
+      </button>`).join('');
+    L.querySelectorAll('.item').forEach(b => b.onclick = () => openSheet(prints.find(p=>p.id===b.dataset.id)));
+  }
+
+  function renderDays(){
+    const by = {};
+    prints.forEach(p => { (by[p.date] ||= []).push(p); });
+    const keys = Object.keys(by).sort().reverse();
+    const tg = prints.reduce((s,p)=>s+(+p.grams||0),0);
+    const tc = prints.reduce((s,p)=>s+calc(p.grams,p.hours).cost,0);
+    const tr = prints.reduce((s,p)=>s+(+p.price||0),0);
+    $('allTotals').innerHTML = `
+      <span class="k">عدد الطبعات</span><span class="num">${prints.length}</span>
+      <span class="k">مجموع الوزن</span><span class="num">${fmtG(tg)} g</span>
+      <span class="k">مجموع التكلفة</span><span class="num">${money(tc)}</span>
+      <span class="k">مجموع المقبوض</span><span class="num">${money(tr)}</span>
+      <span class="k total">الربح</span><span class="num total">${money(tr-tc)}</span>`;
+    const D = $('days');
+    if (!keys.length){ D.innerHTML = `<div class="empty">لم تسجّل أي طبعة بعد.</div>`; return; }
+    D.innerHTML = keys.map(k => {
+      const it = by[k]; const g = it.reduce((s,p)=>s+(+p.grams||0),0);
+      return `<button class="dayrow" data-d="${k}"><div><b>${dayName(k)}</b><small class="num">${k}</small></div>
+        <div style="text-align:left"><b class="num">${fmtG(g)} g</b><small>${it.length} طبعات</small></div></button>`;
+    }).join('');
+    D.querySelectorAll('.dayrow').forEach(b => b.onclick = () => { cur = b.dataset.d; show('orders'); });
+  }
+
+  function renderCalc(){
+    const r = calc($('cGrams').value, $('cHours').value);
+    $('calcOut').innerHTML = `
+      <span class="k">المادة</span><span class="num">${money(r.material)}</span>
+      <span class="k">الكهرباء</span><span class="num">${money(r.power)}</span>
+      <span class="k">هدر وفشل (${S.waste}%)</span><span class="num">${money(r.waste)}</span>
+      ${+S.fixed?`<span class="k">رسوم ثابتة</span><span class="num">${money(S.fixed)}</span>`:''}
+      <span class="k total">التكلفة</span><span class="num total">${money(r.cost)}</span>
+      <span class="k">السعر المقترح (+${S.profit}%)</span><span class="num price">${money(r.price)}</span>`;
+  }
+  ['cGrams','cHours'].forEach(id => $(id).oninput = renderCalc);
+
+  const SMAP = {sSpool:'spool', sSpoolG:'spoolG', sWatt:'watt', sKwh:'kwh', sWaste:'waste', sProfit:'profit', sFixed:'fixed'};
+  function fillSettings(){ Object.entries(SMAP).forEach(([id,k]) => { if (document.activeElement!==$(id)) $(id).value = S[k]; }); }
+  Object.entries(SMAP).forEach(([id,k]) => $(id).oninput = () => { const v = parseFloat($(id).value); S[k] = isNaN(v)?0:v; saveS(); });
+
+  // ---------- day nav ----------
+  $('prevDay').onclick = () => { cur = addDays(cur,-1); renderDay(); };
+  $('nextDay').onclick = () => { cur = addDays(cur, 1); renderDay(); };
+  $('datePick').onchange = e => { if (e.target.value){ cur = e.target.value; renderDay(); } };
+
+  // ---------- sheet ----------
+  let editing = null, photoData = null;
+  function openSheet(p){
+    editing = p || null; photoData = p?.photo || null;
+    $('sheetTitle').textContent = p ? 'تعديل الطبعة' : 'طبعة جديدة';
+    $('fDesc').value = p?.desc || ''; $('fCust').value = p?.customer || '';
+    $('fGrams').value = p?.grams ?? ''; $('fHours').value = p?.hours ?? '';
+    $('fPrice').value = p?.price ?? ''; $('fDate').value = p?.date || cur;
+    $('delBtn').hidden = !p; setPhoto(photoData); updSuggest();
+    $('sheet').classList.add('open');
+  }
+  const closeSheet = () => { $('sheet').classList.remove('open'); $('photoIn').value=''; };
+  function setPhoto(d){ $('photoPrev').hidden = !d; $('photoHint').hidden = !!d; if (d) $('photoPrev').src = d; }
+  function updSuggest(){
+    const g = $('fGrams').value; if (!g){ $('fSuggest').textContent=''; return; }
+    const r = calc(g, $('fHours').value);
+    $('fSuggest').innerHTML = `التكلفة <span class="num">${money(r.cost)}</span> · السعر المقترح <span class="num">${money(r.price)}</span>`;
+  }
+  ['fGrams','fHours'].forEach(id => $(id).oninput = updSuggest);
+  $('addBtn').onclick = () => openSheet();
+  $('cancelBtn').onclick = closeSheet;
+  $('sheet').onclick = e => { if (e.target.id==='sheet') closeSheet(); };
+
+  $('photoIn').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try { photoData = await shrink(f, 900, 0.72); setPhoto(photoData); }
+    catch(err){ toast('تعذّر قراءة الصورة، جرّب صورة أخرى'); }
+  };
+  function shrink(file, max, q){
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file); const img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, max/Math.max(img.width, img.height));
+        const c = document.createElement('canvas'); c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', q));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(); };
+      img.src = url;
+    });
+  }
+
+  $('saveBtn').onclick = async () => {
+    const grams = parseFloat($('fGrams').value);
+    if (isNaN(grams) || grams<=0){ toast('أدخل وزن الطبعة بالغرام'); $('fGrams').focus(); return; }
+    const pr = $('fPrice').value.trim();
+    const p = {
+      id: editing?.id || (Date.now().toString(36)+Math.random().toString(36).slice(2,7)),
+      date: $('fDate').value || cur,
+      desc: $('fDesc').value.trim(), customer: $('fCust').value.trim(),
+      grams, hours: parseFloat($('fHours').value)||0,
+      price: pr==='' ? '' : (parseFloat(pr)||0),
+      photo: photoData, createdAt: editing?.createdAt || Date.now()
+    };
+    try {
+      await putPrint(p); await loadAll();
+      cur = p.date; closeSheet(); render(); toast(editing?'تم حفظ التعديل':'تمت إضافة الطبعة');
+    } catch(e){ toast('فشل الحفظ: قد تكون مساحة التخزين ممتلئة'); }
+  };
+  $('delBtn').onclick = async () => {
+    if (!editing || !confirm('حذف هذه الطبعة نهائياً؟')) return;
+    try { await delPrint(editing.id); await loadAll(); closeSheet(); render(); toast('تم حذف الطبعة'); }
+    catch(e){ toast('فشل الحذف'); }
+  };
+
+  // ---------- backup ----------
+  const saveFile = async (filename, data) => {
+    try {
+      const type = filename.endsWith('.csv') ? 'text/csv' : 'application/json';
+      const file = new File([data], filename, {type});
+      if (navigator.canShare && navigator.canShare({files:[file]})) {
+        try { await navigator.share({files:[file], title:filename}); toast('تم التصدير'); return; }
+        catch(e){ if (e && e.name==='AbortError') return; }
+      }
+      const url = URL.createObjectURL(file); const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000); toast('تم التصدير');
+    } catch(e){ toast('تعذّر التصدير'); }
+  };
+  $('exportBtn').onclick = () => saveFile(`print-log-${today()}.json`, JSON.stringify({v:1, settings:S, prints}));
+  $('csvBtn').onclick = () => {
+    const rows = [['date','description','customer','grams','hours','cost_usd','price_usd']];
+    [...prints].sort((a,b)=>a.date.localeCompare(b.date)).forEach(p => rows.push([p.date,p.desc,p.customer,p.grams,p.hours,calc(p.grams,p.hours).cost.toFixed(2),p.price]));
+    const csv = '\ufeff' + rows.map(r => r.map(v => `"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+    saveFile(`print-log-${today()}.csv`, csv);
+  };
+  $('importFile').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (!Array.isArray(data.prints)) throw 0;
+      for (const p of data.prints) if (p && p.id && p.date) await putPrint(p);
+      if (data.settings){ S = {...DEF, ...data.settings}; saveS(); }
+      await loadAll(); render(); toast(`تم استيراد ${data.prints.length} طبعة`);
+    } catch(err){ toast('الملف ليس نسخة صالحة من هذا التطبيق'); }
+    e.target.value = '';
+  };
+
+  // ---------- boot ----------
+  (async () => {
+    try { db = await openDB(); await loadAll(); }
+    catch(e){ const b=$('banner'); b.textContent='التخزين غير متاح في هذا المتصفح، لن تُحفظ البيانات.'; b.style.display='block'; }
+    try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch(e){}
+    render();
+    if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js'); } catch(e){} }
+  })();
+})();
+</script>
+</body>
+</html>
