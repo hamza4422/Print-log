@@ -190,8 +190,12 @@ label.f textarea{min-height:70px;resize:vertical}
         <label class="f">استهلاك الطابعة (واط)<input type="number" inputmode="decimal" id="sWatt" step="any"></label>
         <label class="f">سعر الكيلوواط ($)<input type="number" inputmode="decimal" id="sKwh" step="any"></label>
         <label class="f">هامش الهدر والفشل (%)<input type="number" inputmode="decimal" id="sWaste" step="any"></label>
-        <label class="f">هامش الربح (%)<input type="number" inputmode="decimal" id="sProfit" step="any"></label>
+        <label class="f">الأقصى للربح (%)<input type="number" inputmode="decimal" id="sPMax" step="any"></label>
+        <label class="f">الأدنى للربح (%)<input type="number" inputmode="decimal" id="sPMin" step="any"></label>
+        <label class="f">يبدأ النزول من (غ)<input type="number" inputmode="decimal" id="sGLo" step="any"></label>
+        <label class="f">يصل للأدنى عند (غ)<input type="number" inputmode="decimal" id="sGHi" step="any"></label>
       </div>
+      <p class="hint" style="margin:-4px 0 12px">الهامش ينزل تدريجياً من الأقصى إلى الأدنى بين الوزنين، ويبقى ثابتاً خارجهما.</p>
       <label class="f">رسوم ثابتة لكل طبعة ($)<input type="number" inputmode="decimal" id="sFixed" step="any"></label>
       <p class="hint">تُحفظ تلقائياً على هذا الجهاز.</p>
     </div>
@@ -202,7 +206,7 @@ label.f textarea{min-height:70px;resize:vertical}
         <button class="btn" id="exportBtn">تصدير نسخة</button>
         <label class="btn ghost" style="text-align:center">استيراد نسخة<input type="file" id="importFile" accept=".json,application/json" hidden></label>
       </div>
-            <button class="btn ghost block" id="csvBtn" style="margin-top:10px">تصدير جدول CSV للإكسل</button>
+      <button class="btn ghost block" id="csvBtn" style="margin-top:10px">تصدير جدول CSV للإكسل</button>
     </div>
   </section>
 </div>
@@ -245,7 +249,7 @@ label.f textarea{min-height:70px;resize:vertical}
 <script>
 (() => {
   // ---------- storage ----------
-  const DEF = {spool:20, spoolG:1000, watt:120, kwh:0.35, waste:10, profit:100, fixed:0};
+  const DEF = {spool:20, spoolG:1000, watt:120, kwh:0.35, waste:10, profit:100, fixed:0, pMax:150, pMin:70, gLo:10, gHi:300};
   let S = {...DEF};
   try { const s = JSON.parse(localStorage.getItem('pl_settings')||'null'); if (s) S = {...DEF, ...s}; } catch(e){}
   const saveS = () => { try { localStorage.setItem('pl_settings', JSON.stringify(S)); } catch(e){} };
@@ -282,14 +286,26 @@ label.f textarea{min-height:70px;resize:vertical}
   const toast = m => { const t = $('toast'); t.textContent = m; t.style.display='block'; clearTimeout(toast._t); toast._t = setTimeout(()=>t.style.display='none', 1800); };
   const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+  // Margin tapers from pMax (at <= gLo) to pMin (at >= gHi) on a log scale,
+  // so each doubling of weight lowers it by the same amount and price never drops as weight rises.
+  function marginFor(g){
+    const hi = Number(S.pMax)||0, lo = Number(S.pMin)||0;
+    const a = Math.max(0.1, Number(S.gLo)||10), b = Math.max(a*1.0001, Number(S.gHi)||300);
+    if (g <= a) return hi;
+    if (g >= b) return lo;
+    const t = Math.log(g/a) / Math.log(b/a);
+    return hi + (lo - hi) * t;
+  }
+
   function calc(g, h){
     g = Number(g)||0; h = Number(h)||0;
     const material = g * (S.spool / (S.spoolG||1000));
     const power = (S.watt/1000) * h * S.kwh;
     const waste = (material + power) * (S.waste/100);
     const cost = material + power + waste + (Number(S.fixed)||0);
-    const price = cost * (1 + S.profit/100);
-    return {material, power, waste, cost, price};
+    const margin = marginFor(g);
+    const price = cost * (1 + margin/100);
+    return {material, power, waste, cost, price, margin};
   }
 
   // ---------- views ----------
@@ -375,11 +391,11 @@ label.f textarea{min-height:70px;resize:vertical}
       <span class="k">هدر وفشل (${S.waste}%)</span><span class="num">${money(r.waste)}</span>
       ${+S.fixed?`<span class="k">رسوم ثابتة</span><span class="num">${money(S.fixed)}</span>`:''}
       <span class="k total">التكلفة</span><span class="num total">${money(r.cost)}</span>
-      <span class="k">السعر المقترح (+${S.profit}%)</span><span class="num price">${money(r.price)}</span>`;
+      <span class="k">السعر المقترح (+${Math.round(r.margin)}%)</span><span class="num price">${money(r.price)}</span>`;
   }
   ['cGrams','cHours'].forEach(id => $(id).oninput = renderCalc);
 
-  const SMAP = {sSpool:'spool', sSpoolG:'spoolG', sWatt:'watt', sKwh:'kwh', sWaste:'waste', sProfit:'profit', sFixed:'fixed'};
+  const SMAP = {sSpool:'spool', sSpoolG:'spoolG', sWatt:'watt', sKwh:'kwh', sWaste:'waste', sFixed:'fixed', sPMax:'pMax', sPMin:'pMin', sGLo:'gLo', sGHi:'gHi'};
   function fillSettings(){ Object.entries(SMAP).forEach(([id,k]) => { if (document.activeElement!==$(id)) $(id).value = S[k]; }); }
   Object.entries(SMAP).forEach(([id,k]) => $(id).oninput = () => { const v = parseFloat($(id).value); S[k] = isNaN(v)?0:v; saveS(); });
 
@@ -404,7 +420,7 @@ label.f textarea{min-height:70px;resize:vertical}
   function updSuggest(){
     const g = $('fGrams').value; if (!g){ $('fSuggest').textContent=''; return; }
     const r = calc(g, $('fHours').value);
-    $('fSuggest').innerHTML = `التكلفة <span class="num">${money(r.cost)}</span> · السعر المقترح <span class="num">${money(r.price)}</span>`;
+    $('fSuggest').innerHTML = `التكلفة <span class="num">${money(r.cost)}</span> · السعر المقترح <span class="num">${money(r.price)}</span> <span style="opacity:.7">(+${Math.round(r.margin)}%)</span>`;
   }
   ['fGrams','fHours'].forEach(id => $(id).oninput = updSuggest);
   $('addBtn').onclick = () => openSheet();
